@@ -41,7 +41,7 @@ def distill_model(args, make_model, make_dataset):
 
     len(train_dataset), len(test_dataset)
 
-    img, anno = train_dataset[0]
+    # img, anno = train_dataset[0]
 
     teacher_ema = make_model().to(device)
 
@@ -52,10 +52,10 @@ def distill_model(args, make_model, make_dataset):
         os.makedirs(checkpoints_dir)
 
     ckpt = torch.load(args.base_checkpoint)
-    teacher_ema.load_state_dict(ckpt["G"])
-    n_timesteps = ckpt["n_timesteps"]
-    time_scale = ckpt["time_scale"]
-    del ckpt
+    # teacher_ema.load_state_dict(ckpt["G"])
+    teacher_ema.load_state_dict(ckpt)
+    n_timesteps = 1000#ckpt["n_timesteps"]
+    time_scale = 1#ckpt["time_scale"]
     print(f"Num timesteps: {n_timesteps}, time scale: {time_scale}.")
 
     def make_scheduler():
