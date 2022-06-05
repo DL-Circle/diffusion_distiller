@@ -9,8 +9,8 @@ BASE_TIME_SCALE = 1
 inputfolder = "../Datasets/Nii-Dataset/input/"
 targetfolder = "../Datasets/Nii-Dataset/target/"
 channel = 32
-input_size = 64#128 
-depth_size = 48#96
+input_size = 128 
+depth_size = 96
 
 transform = Compose([
     Lambda(lambda t: torch.tensor(t).float()),
