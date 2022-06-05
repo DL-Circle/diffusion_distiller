@@ -13,13 +13,17 @@ apply `--use-teacher-model` = use OpenAI UNet model
 ```
 3. (step3) student model -> student model : timestep [250 -> 125] x8
 ```
-   python3 distillate.py --module module_3d --diffusion GaussianDiffusionDefault --name module_3d --dname base_1 --base_checkpoint ./checkpoints/module_3d/base_1/checkpoint.pt --batch_size 3 --num_workers 4 --num_iters 5000 --log_interval 5
+   python3 distillate.py --module module_3d --diffusion GaussianDiffusionDefault --name module_3d --dname base_2 --base_checkpoint ./checkpoints/module_3d/base_1/checkpoint.pt --batch_size 3 --num_workers 4 --num_iters 5000 --log_interval 5
 ```
 4. (step4) student model -> student model : timestep [125 -> 62] x16
 ```
-   python3 distillate.py --module module_3d --diffusion GaussianDiffusionDefault --name module_3d --dname base_1 --base_checkpoint ./checkpoints/module_3d/base_2/checkpoint.pt --batch_size 3 --num_workers 4 --num_iters 5000 --log_interval 5
+   python3 distillate.py --module module_3d --diffusion GaussianDiffusionDefault --name module_3d --dname base_3 --base_checkpoint ./checkpoints/module_3d/base_2/checkpoint.pt --batch_size 3 --num_workers 4 --num_iters 5000 --log_interval 5
 ```
+5. (step5) sample
+```
+python3 sample.py --out_file ./images/module3d_u_3.png --module module_3d --checkpoint ./checkpoints/module_3d/base_3/checkpoint.pt --batch_size 4 --clip_value 1.0
 
+```
 
 # 02. (Base Code ReadMe) PyTorch Implementation of "Progressive Distillation for Fast Sampling of Diffusion Models(v-diffusion)"
 
