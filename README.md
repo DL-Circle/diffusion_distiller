@@ -22,7 +22,6 @@ apply `--use-teacher-model` = use OpenAI UNet model
 5. (step5) sample
 ```
 python3 sample.py --out_file ./images/module3d_u_3.png --module module_3d --checkpoint ./checkpoints/module_3d/base_3/checkpoint.pt --batch_size 4 --clip_value 1.0
-
 ```
 
 # 02. (Base Code ReadMe) PyTorch Implementation of "Progressive Distillation for Fast Sampling of Diffusion Models(v-diffusion)"
