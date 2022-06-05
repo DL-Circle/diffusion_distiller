@@ -109,9 +109,11 @@ class InfinityDataset(torch.utils.data.Dataset):
         return self.L
 
 
-def make_condition(img, label, device):
-    return {}
+# def make_condition(img, label, device):
+#     return {}
 
+def make_condition(img, device):
+    return {}
 
 class DiffusionTrain:
 
@@ -190,11 +192,13 @@ class DiffusionDistillation:
         pbar = tqdm(distill_train_loader)
         N = 0
         L_tot = 0
-        for img, label in pbar:
+        # for img, label in pbar:
+        for img in pbar:
             scheduler.zero_grad()
             img = img.to(device)
             time = 2 * torch.randint(0, student_diffusion.num_timesteps, (img.shape[0],), device=device)
-            extra_args = make_extra_args(img, label, device)
+            # extra_args = make_extra_args(img, label, device)
+            extra_args = make_extra_args(img, device)
             loss = teacher_diffusion.distill_loss(student_diffusion, img, time, extra_args)
             L = loss.item()
             L_tot += L

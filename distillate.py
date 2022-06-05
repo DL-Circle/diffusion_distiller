@@ -2,6 +2,7 @@
 # coding: utf-8
 import argparse
 import importlib
+from module_3d import make_teacher_model
 from v_diffusion import make_beta_schedule
 from train_utils import *
 from moving_average import init_ema_model
@@ -22,6 +23,8 @@ def make_argument_parser():
     parser.add_argument("--diffusion", help="Diffusion model.", type=str, default="GaussianDiffusionDefault")
     parser.add_argument("--log_interval", help="Log interval in minutes.", type=int, default=15)
     parser.add_argument("--ckpt_interval", help="Checkpoints saving interval in minutes.", type=int, default=30)
+    parser.add_argument('--use-teacher-model', action='store_true')
+    parser.add_argument('--pass-load-teacher-model', action='store_true')
     parser.add_argument("--num_workers", type=int, default=-1)
     return parser
 
@@ -43,7 +46,12 @@ def distill_model(args, make_model, make_dataset):
 
     # img, anno = train_dataset[0]
 
-    teacher_ema = make_model().to(device)
+    if args.use_teacher_model:
+        print("OpenAI UNet Applied")
+        teacher_ema = make_teacher_model().to(device)
+    else:
+        print("Default UNet Applied")
+        teacher_ema = make_model().to(device)
 
     image_size = teacher_ema.image_size
 
@@ -51,11 +59,31 @@ def distill_model(args, make_model, make_dataset):
     if not os.path.exists(checkpoints_dir):
         os.makedirs(checkpoints_dir)
 
-    ckpt = torch.load(args.base_checkpoint)
-    # teacher_ema.load_state_dict(ckpt["G"])
-    teacher_ema.load_state_dict(ckpt)
-    n_timesteps = 1000#ckpt["n_timesteps"]
-    time_scale = 1#ckpt["time_scale"]
+    if not args.pass_load_teacher_model:
+        ckpt = torch.load(args.base_checkpoint)
+        # # teacher_ema.load_state_dict(ckpt["G"])
+        if args.use_teacher_model:
+            model_weights = teacher_ema.state_dict()
+            ck_weights = ckpt["ema"]
+            new_weights = {}
+            # import Levenshtein
+            # print(">>>", len(ck_weights), len(list(ck_weights.keys())[13:]))
+            # for k1, k2 in zip(model_weights, list(ck_weights.keys())[13:]):
+            #     dist = Levenshtein.distance(k1, k2.replace("denoise_fn.", ""))
+            #     if dist == 0:
+            #         print(dist, k1)
+            #     else:
+            #         print(dist, k1, k2.replace("denoise_fn.", ""))
+            #     # print(k1, k2.replace("denoise_fn.", ""))
+            for k1, k2 in zip(model_weights, len(list(ck_weights.keys())[13:])):
+                new_weights[k1] = ck_weights[k2]
+            ckpt = new_weights#ckpt["ema"]
+            teacher_ema.load_state_dict(ckpt)
+        else:
+            teacher_ema.load_state_dict(ckpt)
+
+    n_timesteps = 1000 if args.use_teacher_model else ckpt["n_timesteps"]
+    time_scale = 1 if args.use_teacher_model else ckpt["time_scale"]
     print(f"Num timesteps: {n_timesteps}, time scale: {time_scale}.")
 
     def make_scheduler():
@@ -92,7 +120,7 @@ def distill_model(args, make_model, make_dataset):
 
     tensorboard = SummaryWriter(os.path.join(checkpoints_dir, "tensorboard"))
 
-    if args.checkpoint_to_continue == "":
+    if args.checkpoint_to_continue == "" and not args.use_teacher_model:
         init_ema_model(teacher_ema, student, device)
         init_ema_model(teacher_ema, student_ema, device)
         print("Teacher parameters copied.")

@@ -167,7 +167,8 @@ class GaussianDiffusionDefault(GaussianDiffusion):
         with torch.no_grad():
             alpha, sigma = self.get_alpha_sigma(x, t + 1)
             z = alpha * x + sigma * eps
-            alpha_s, sigma_s = student_diffusion.get_alpha_sigma(x, t // 2)
+            # alpha_s, sigma_s = student_diffusion.get_alpha_sigma(x, t // 2)
+            alpha_s, sigma_s = student_diffusion.get_alpha_sigma(x, torch.div(t, 2, rounding_mode='floor'))
             alpha_1, sigma_1 = self.get_alpha_sigma(x, t)
             v = self.inference(z.float(), t.float() + 1, extra_args).double()
             rec = (alpha * z - sigma * v).clip(-1, 1)

@@ -150,11 +150,13 @@ class ResBlock(nn.Module):
         out = self.conv1(self.activation1(self.norm1(input)))
 
         if self.use_affine_time:
-            gamma, beta = self.time(time).view(batch, -1, 1, 1).chunk(2, dim=1)
+            # gamma, beta = self.time(time).view(batch, -1, 1, 1).chunk(2, dim=1)
+            gamma, beta = self.time(time).view(batch, -1, 1, 1, 1).chunk(2, dim=1)
             out = (1 + gamma) * self.norm2(out) + beta
 
         else:
-            out = out + self.time(time).view(batch, -1, 1, 1)
+            # out = out + self.time(time).view(batch, -1, 1, 1)
+            out = out + self.time(time).view(batch, -1, 1, 1, 1)
             out = self.norm2(out)
 
         out = self.conv2(self.dropout(self.activation2(out)))
@@ -176,23 +178,35 @@ class SelfAttention(nn.Module):
         self.out = conv3d(in_channel, in_channel, 1, scale=1e-10)
 
     def forward(self, input):
-        batch, channel, height, width = input.shape
+        # batch, channel, height, width = input.shape
+        batch, channel, depth, height, width = input.shape
         n_head = self.n_head
         head_dim = channel // n_head
 
         norm = self.norm(input)
-        qkv = self.qkv(norm).view(batch, n_head, head_dim * 3, height, width)
+        # qkv = self.qkv(norm).view(batch, n_head, head_dim * 3, height, width)
+        qkv = self.qkv(norm).view(batch, n_head, head_dim * 3, depth, height, width)
         query, key, value = qkv.chunk(3, dim=2)  # bhdyx
 
-        attn = torch.einsum(
-            "bnchw, bncyx -> bnhwyx", query, key
-        ).contiguous() / math.sqrt(channel)
-        attn = attn.view(batch, n_head, height, width, -1)
-        attn = torch.softmax(attn, -1)
-        attn = attn.view(batch, n_head, height, width, height, width)
+        # attn = torch.einsum(
+        #     "bnchw, bncyx -> bnhwyx", query, key
+        # ).contiguous() / math.sqrt(channel)
+        # attn = attn.view(batch, n_head, height, width, -1)
+        # attn = torch.softmax(attn, -1)
+        # attn = attn.view(batch, n_head, height, width, height, width)
 
-        out = torch.einsum("bnhwyx, bncyx -> bnchw", attn, value).contiguous()
-        out = self.out(out.view(batch, channel, height, width))
+        # out = torch.einsum("bnhwyx, bncyx -> bnchw", attn, value).contiguous()
+        # out = self.out(out.view(batch, channel, height, width))
+
+        attn = torch.einsum(
+            "bncdhw, bnczyx -> bndhwzyx", query, key
+        ).contiguous() / math.sqrt(channel)
+        attn = attn.view(batch, n_head, depth, height, width, -1)
+        attn = torch.softmax(attn, -1)
+        attn = attn.view(batch, n_head, depth, height, width, depth, height, width)
+
+        out = torch.einsum("bndhwzyx, bnczyx -> bncdhw", attn, value).contiguous()
+        out = self.out(out.view(batch, channel, depth, height, width))
 
         return out + input
 
@@ -422,3 +436,20 @@ class UNet(nn.Module):
         out = spatial_unfold(out, self.fold)
 
         return out
+
+if __name__ == '__main__':
+    net = UNet(in_channel = 1+2,#3,
+        channel = 16,#128-16,
+        channel_multiplier = [1, 2, 2, 4, 4],
+        n_res_blocks = 1,
+        attn_strides = [8, 16],
+        attn_heads = 4,
+        use_affine_time = True,
+        dropout = 0,
+        fold = 1)
+    net.image_size = [1, 3, 96, 128, 128]
+    net.cuda()
+    x = torch.randn(1, 3, 96, 128, 128).cuda()
+    t = torch.randint(1, 1000, (1, )).cuda()
+    o = net(x, t)
+    print(o.shape)
