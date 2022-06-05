@@ -5,19 +5,19 @@
 apply `--use-teacher-model` = use OpenAI UNet model
 
 ```
-   python3 distillate.py --module module_3d --diffusion GaussianDiffusionDefault --name module_3d --dname base_0 --base_checkpoint /path/to/teacher_model --batch_size 3 --use-teacher-model --num_workers 4 --num_iters 5000 --log_interval 5
+python3 distillate.py --module module_3d --diffusion GaussianDiffusionDefault --name module_3d --dname base_0 --base_checkpoint /path/to/teacher_model --batch_size 3 --use-teacher-model --num_workers 4 --num_iters 5000 --log_interval 5
 ```
 2. (step2) student model -> student model : timestep [500 -> 250] x4 
 ```
-   python3 distillate.py --module module_3d --diffusion GaussianDiffusionDefault --name module_3d --dname base_1 --base_checkpoint ./checkpoints/module_3d/base_0/checkpoint.pt --batch_size 3 --num_workers 4 --num_iters 5000 --log_interval 5
+python3 distillate.py --module module_3d --diffusion GaussianDiffusionDefault --name module_3d --dname base_1 --base_checkpoint ./checkpoints/module_3d/base_0/checkpoint.pt --batch_size 3 --num_workers 4 --num_iters 5000 --log_interval 5
 ```
 3. (step3) student model -> student model : timestep [250 -> 125] x8
 ```
-   python3 distillate.py --module module_3d --diffusion GaussianDiffusionDefault --name module_3d --dname base_2 --base_checkpoint ./checkpoints/module_3d/base_1/checkpoint.pt --batch_size 3 --num_workers 4 --num_iters 5000 --log_interval 5
+python3 distillate.py --module module_3d --diffusion GaussianDiffusionDefault --name module_3d --dname base_2 --base_checkpoint ./checkpoints/module_3d/base_1/checkpoint.pt --batch_size 3 --num_workers 4 --num_iters 5000 --log_interval 5
 ```
 4. (step4) student model -> student model : timestep [125 -> 62] x16
 ```
-   python3 distillate.py --module module_3d --diffusion GaussianDiffusionDefault --name module_3d --dname base_3 --base_checkpoint ./checkpoints/module_3d/base_2/checkpoint.pt --batch_size 3 --num_workers 4 --num_iters 5000 --log_interval 5
+python3 distillate.py --module module_3d --diffusion GaussianDiffusionDefault --name module_3d --dname base_3 --base_checkpoint ./checkpoints/module_3d/base_2/checkpoint.pt --batch_size 3 --num_workers 4 --num_iters 5000 --log_interval 5
 ```
 5. (step5) sample
 ```
