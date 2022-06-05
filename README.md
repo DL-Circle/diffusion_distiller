@@ -1,4 +1,27 @@
-# PyTorch Implementation of "Progressive Distillation for Fast Sampling of Diffusion Models(v-diffusion)"
+# 01. Train Student Model
+
+1. (step1) train teacher model -> student model : timestep [1000 -> 500] x2 
+
+apply `--use-teacher-model` = use OpenAI UNet model
+
+```
+   python3 distillate.py --module module_3d --diffusion GaussianDiffusionDefault --name module_3d --dname base_0 --base_checkpoint /path/to/teacher_model --batch_size 3 --use-teacher-model --num_workers 4 --num_iters 5000 --log_interval 5
+```
+2. (step2) student model -> student model : timestep [500 -> 250] x4 
+```
+   python3 distillate.py --module module_3d --diffusion GaussianDiffusionDefault --name module_3d --dname base_1 --base_checkpoint ./checkpoints/celeba/base_0/checkpoint.pt --batch_size 3 --num_workers 4 --num_iters 5000 --log_interval 5
+```
+3. (step3) student model -> student model : timestep [250 -> 125] x8
+```
+   python3 distillate.py --module module_3d --diffusion GaussianDiffusionDefault --name module_3d --dname base_1 --base_checkpoint ./checkpoints/celeba/base_1/checkpoint.pt --batch_size 3 --num_workers 4 --num_iters 5000 --log_interval 5
+```
+4. (step4) student model -> student model : timestep [125 -> 62] x16
+```
+   python3 distillate.py --module module_3d --diffusion GaussianDiffusionDefault --name module_3d --dname base_1 --base_checkpoint ./checkpoints/celeba/base_2/checkpoint.pt --batch_size 3 --num_workers 4 --num_iters 5000 --log_interval 5
+```
+
+
+# 02. (Base Code ReadMe) PyTorch Implementation of "Progressive Distillation for Fast Sampling of Diffusion Models(v-diffusion)"
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1L-SF60txSiskbzw9tFGpc8qB5R7AXEec?usp=sharing)
 
