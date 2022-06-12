@@ -80,7 +80,7 @@ def distill_model(args, make_model, make_dataset):
             ckpt = new_weights#ckpt["ema"]
             teacher_ema.load_state_dict(ckpt)
         else:
-            teacher_ema.load_state_dict(ckpt)
+            teacher_ema.load_state_dict(ckpt["G"])
 
     n_timesteps = 1000 if args.use_teacher_model else ckpt["n_timesteps"]
     time_scale = 1 if args.use_teacher_model else ckpt["time_scale"]

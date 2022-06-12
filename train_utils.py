@@ -9,10 +9,13 @@ from moving_average import moving_average
 from strategies import *
 
 @torch.no_grad()
-def p_sample_loop(diffusion, noise, extra_args, device, eta=0, samples_to_capture=-1, need_tqdm=True, clip_value=3):
+def p_sample_loop(diffusion, noise, extra_args, device, condition_tensors=None, eta=0, samples_to_capture=-1, need_tqdm=True, clip_value=3):
     mode = diffusion.net_.training
     diffusion.net_.eval()
     img = noise
+    print("Sample Noise>>>", noise.shape)
+    img = torch.cat([noise, condition_tensors], 1)
+    print()
     imgs = []
     iter_ = reversed(range(diffusion.num_timesteps))
     c_step = diffusion.num_timesteps/samples_to_capture
@@ -58,10 +61,27 @@ def make_visualization_(diffusion, device, image_size, need_tqdm=False, eta=0, c
 
 def make_visualization(diffusion, device, image_size, need_tqdm=False, eta=0, clip_value=1.2):
     images_ = make_visualization_(diffusion, device, image_size, need_tqdm=need_tqdm, eta=eta, clip_value=clip_value)
-    images_ = images_[0].permute(1, 2, 0).cpu().numpy()
+    images_ = images_[0].permute(1, 2, 3, 0).cpu().numpy() # (c, h, w)
     images_ = (255 * (images_ + 1) / 2).clip(0, 255).astype(np.uint8)
     return images_
 
+def make_visualization_3d_(diffusion, device, image_size, condition_tensors, need_tqdm=False, eta=0, clip_value=1.2):
+    extra_args = {}
+    noise = torch.randn(image_size, device=device)
+    imgs = p_sample_loop(diffusion, noise, extra_args, "cuda", samples_to_capture=5, need_tqdm=need_tqdm, eta=eta, clip_value=clip_value)
+    images_ = []
+    for images in imgs:
+        images = images.split(1, dim=0)
+        images = torch.cat(images, -1)
+        images_.append(images)
+    images_ = torch.cat(images_, 2)
+    return images_
+
+def make_visualization_3d(diffusion, device, image_size, condition_tensors, need_tqdm=False, eta=0, clip_value=1.2):
+    images_ = make_visualization_3d_(diffusion, device, image_size, condition_tensors=condition_tensors, need_tqdm=need_tqdm, eta=eta, clip_value=clip_value)
+    images_ = images_[0].permute(1, 2, 3, 0).cpu().numpy() # (c, h, w)
+    images_ = ((images_ + 1) / 2).clip(0, 1).astype(np.uint8)
+    return images_
 
 def make_iter_callback(diffusion, device, checkpoint_path, image_size, tensorboard, log_interval, ckpt_interval, need_tqdm=False):
     state = {
@@ -129,11 +149,13 @@ class DiffusionTrain:
         pbar = tqdm(train_loader)
         N = 0
         L_tot = 0
-        for img, label in pbar:
+        # for img, label in pbar:
+        for img in pbar:
             scheduler.zero_grad()
             img = img.to(device)
             time = torch.randint(0, diffusion.num_timesteps, (img.shape[0],), device=device)
-            extra_args = make_extra_args(img, label, device)
+            # extra_args = make_extra_args(img, label, device)
+            extra_args = make_extra_args(img, device)
             loss = diffusion.p_loss(img, time, extra_args)
             L_tot += loss.item()
             N += 1
